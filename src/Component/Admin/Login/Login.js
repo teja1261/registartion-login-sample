@@ -1,111 +1,134 @@
 import React, { useState } from "react";
-import { Button, Alert } from "react-bootstrap";
+import { Alert } from "react-bootstrap";
+import { Redirect } from "react-router-dom";
 import Wrapper from "../../../Helpers/Wrapper";
-import firebase from "../../../Services/firebase/firebase";
+import { loginAuth } from "src/Services/loginAuth";
+import { RotatingLines } from "react-loader-spinner";
+import Cookies from "js-cookie";
 import Input from "../../UI/Input/Input";
-// import Snackbar from "../../UI/Snackbar/Snackbar";
-// import ErrorModal from "../UI/ErrorModal/ErrorModal";
-// import Preloader from "../../UI/Preloader/Preloader";
 
 import style from "./Login.module.css";
 
 const Login = (props) => {
   const [error, setError] = useState();
-  const [userCred, setUserCred] = useState({
-    email: "",
-    password: ""
-  });
-  // const [open, setOpen] = React.useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loader, setLoader] = useState(false);
 
-  // const handleClose = (event, reason) => {
-  //   if (reason === "clickaway") {
-  //     return;
-  //   }
-  //   setOpen(false);
-  // };
+  const onChangeUsername = (event) => {
+    setEmail(event.target.value);
+    setError();
+  };
 
-  const changeHandler = (event) => {
-    let val = event.target.value;
-    setUserCred((prevState) => {
-      return {
-        ...prevState,
-        [event.target.name]: val
-      };
+  const onChangePassword = (event) => {
+    setPassword(event.target.value);
+    setError();
+  };
+
+  const onSubmitSuccess = (jwtTkoken, username) => {
+    const { history } = props;
+
+    Cookies.set("jwt_token", jwtTkoken, {
+      expires: 365,
+      path: "/",
     });
+
+    localStorage.setItem("username", username);
+    history.replace("/");
   };
 
-  const submitHandler = (event) => {
+  const submitHandler = async (event) => {
     event.preventDefault();
-    // firebase signin auth
-    firebase
-      .auth()
-      .signInWithEmailAndPassword(userCred.email, userCred.password)
-      .then((userCredential) => {
-        // setOpen(true);
-        // Signed in
-        let userId = userCredential.user.uid;
-        console.log(userId);
-        // localStorage.setItem("userId", userId);F
-        // localStorage.setItem("userId", userId);F
-        // props.history.replace(`/home?userId=${userId}`);
-        props.history.push("/home");
-      })
-      .catch((e) => {
-        console.log(e.code);
-        if (e.code === "auth/wrong-password") {
-          setError("Incorrect password. Try again.");
-        } else if (e.code === "auth/network-request-failed") {
-          setError("Internet connection is down!!!");
-        } else {
-          setError("User doesn't exist. Please do register.");
-        }
-      });
+    setLoader(true);
+    const loginRequest = await loginAuth(email, password);
+    if (loginRequest.ok) {
+      const dataRes = await loginRequest.json();
+      setLoader(false);
+      onSubmitSuccess(dataRes.token, dataRes.data.fullName);
+    } else {
+      setLoader(false);
+      setError(loginRequest.statusText);
+    }
   };
+
+  const onCancelCall = () => {
+    setEmail("");
+    setError();
+    setPassword("");
+  };
+
+  const jwtToken = Cookies.get("jwt_token");
+  if (jwtToken !== undefined) {
+    return <Redirect to="/" />;
+  }
 
   return (
     <Wrapper>
-      <div className={style.Login}>
-        {/* <Snackbar open={open} handleClose={handleClose} /> */}
-        <h1>Login</h1>
-        {error && <Alert variant="danger">{error}</Alert>}
-        <form onSubmit={submitHandler}>
-          <Input
-            type="email"
-            name="email"
-            label="Email address"
-            id="email"
-            placeholder="Enter email"
-            text="We'll never share your email with anyone else."
-            isText="true"
-            onChange={changeHandler}
-            value={userCred.email}
+      {loader === true ? (
+        <div className="login-form-container">
+          <RotatingLines
+            strokeColor="grey"
+            strokeWidth="5"
+            animationDuration="0.75"
+            width="96"
+            visible={true}
           />
+        </div>
+      ) : (
+        <div className={style.Login}>
+          <h1>Login</h1>
+          {error && <Alert variant="danger">{error}</Alert>}
+          <form onSubmit={submitHandler}>
+            <Input
+              type="email"
+              name="email"
+              label="Email address"
+              id="email"
+              placeholder="Enter email"
+              text="We'll never share your email with anyone else."
+              isText="true"
+              onChange={onChangeUsername}
+              value={email}
+            />
 
-          <Input
-            type="password"
-            label="Password"
-            id="password"
-            name="password"
-            placeholder="Password"
-            onChange={changeHandler}
-            value={userCred.password}
-          />
+            <Input
+              type="password"
+              label="Password"
+              id="password"
+              name="password"
+              placeholder="Password"
+              onChange={onChangePassword}
+              value={password}
+            />
 
-          <Button className={style.Button} variant="primary" type="submit">
-            Submit
-          </Button>
-          <Button className={style.Button} variant="primary">
-            Cancel
-          </Button>
-          <br />
-          <br />
-          <br />
-          <p style={{ display: "inline" }}>Don't have an account? </p>
-          <a className={style.Link} href="/signup">
-            Register
-          </a>
-        </form>
-      </div>
+            <button
+              className={style.new_button}
+              variant="primary"
+              type="submit"
+            >
+              Submit
+            </button>
+            <button
+              className={style.new_button}
+              variant="primary"
+              onClick={onCancelCall}
+            >
+              Cancel
+            </button>
+            <br />
+            <br />
+            <br />
+            <p style={{ display: "inline" }}>Don't have an account? </p>
+            <a className={style.Link} href="/signup">
+              Register
+            </a>
+            <br />
+            <a className={style.Link} href="/forget-password">
+              Forget Password ?
+            </a>
+          </form>
+        </div>
+      )}
     </Wrapper>
   );
 };

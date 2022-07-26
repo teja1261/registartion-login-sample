@@ -30,3 +30,14 @@ h1 {
     margin-left: 10px;
   }
 }
+
+.new_button{
+  float: left;
+  margin-left: 10px;
+  background-color: #0080FF;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  height: 38px;
+  width: 70px;
+}

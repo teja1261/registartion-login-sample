@@ -1,192 +1,163 @@
-import React, { useState } from "react";
-import { Alert, Button } from "react-bootstrap";
-import firebase from "../../../Services/firebase/firebase";
-import Input from "../../UI/Input/Input";
-import Wrapper from "../../../Helpers/Wrapper";
-import ErrorModal from "../../UI/ErrorModal/ErrorModal";
+import { Component } from "react";
+import Cookies from "js-cookie";
+import { Redirect } from "react-router-dom";
+import { RotatingLines } from "react-loader-spinner";
+import "./Signup.css";
+import { signupAPI } from "src/Services/signupAPI";
 
-import style from "./Signup.module.css";
-
-const Signup = (props) => {
-  let db = firebase.firestore();
-  const [error, setError] = useState("");
-  const [errorModal, setErrorModal] = useState();
-  const [userDetails, setUserDetails] = useState({
-    id: "",
-    name: "",
+class Signup extends Component {
+  state = {
+    fullName: "",
     email: "",
-    phone: "",
-    password: "",
-    confirmPassword: ""
-  });
-
-  const changeHandler = (event) => {
-    let val = event.target.value;
-    setUserDetails((prevState) => {
-      return {
-        ...prevState,
-        [event.target.name]: val
-      };
-    });
+    mobile: "",
+    showSubmitError: false,
+    errorMsg: "",
+    loader: false,
   };
 
-  // new user signup
-  const signUpAuth = (event) => {
-    event.preventDefault();
-    // console.log(event.target);
-    // console.log(userDetails.password.length);
-    if (userDetails.password !== userDetails.confirmPassword) {
-      setError("Passwords do not match");
-    } else if (
-      userDetails.password === "" ||
-      userDetails.confirmPassword === ""
-    ) {
-      setError("Enter valid passwords");
-    } else if (
-      userDetails.password.length < 8 ||
-      userDetails.confirmPassword.length < 8
-    ) {
-      setError("Password length should be atleast 8.");
-    } else {
-      firebase
-        .auth()
-        .createUserWithEmailAndPassword(
-          userDetails.email.trim(),
-          userDetails.password.trim()
-        )
-        .then((userCred) => {
-          const user = firebase.auth().currentUser;
-          user.updateProfile({
-            displayName: userDetails.name,
-            photoURL: "https://www.w3schools.com/howto/img_avatar.png"
-          });
+  onChangeUsername = (event) => {
+    this.setState({ fullName: event.target.value, errorMsg: "" });
+  };
 
-          // signed-in
-          const docId = userCred.user.uid;
-          // store other data's in firestore
-          const empId = getEmpId();
-          const adminPin = empId.substring(3).toString();
-          db.collection("admin_users")
-            .doc(docId)
-            .set({
-              id: docId,
-              empID: empId,
-              name: userDetails.name,
-              email: userDetails.email,
-              phone: userDetails.phone,
-              adminPIN: adminPin,
-              password: userDetails.password,
-              profile_image: "https://www.w3schools.com/howto/img_avatar.png"
-            })
-            .then((docRef) => console.log("successfully updated to firestore."))
-            .catch((e) => console.log(e, "firestore"));
-        })
-        .catch((e) => console.log(e, "create_authentication"));
-      // other things
-      setError("");
-      setErrorModal({
-        title: "Successful Registered!!!",
-        message: `Hi ${userDetails.name}, click okay button to continue to login page.`
-      });
-      setUserDetails({
-        name: "",
-        email: "",
-        phone: "",
-        password: "",
-        confirmPassword: ""
+  onChangePassword = (event) => {
+    this.setState({ email: event.target.value, errorMsg: "" });
+  };
+
+  onChangeMobile = (event) => {
+    this.setState({ mobile: event.target.value, errorMsg: "" });
+  };
+
+  onSubmitSuccess = () => {
+    const { history } = this.props;
+    history.replace("/login");
+  };
+
+  submitForm = async () => {
+    const { fullName, mobile, email } = this.state;
+    this.setState({ loader: true });
+    const response = await signupAPI(fullName, mobile, email);
+    console.log(response);
+    if (response.ok) {
+      this.setState({ loader: false });
+      this.onSubmitSuccess();
+    } else {
+      console.log("Error", response);
+      this.setState({
+        loader: false,
+        errorMsg: response.statusText,
+        showSubmitError: true,
       });
     }
   };
 
-  const getEmpId = (event) => {
-    let rand = Math.random() * 10000;
-    let round = Math.ceil(rand);
-    // console.log(rand, round);
-    return "EMP" + round;
+  validateData = (event) => {
+    event.preventDefault();
+    const { fullName, mobile, email } = this.state;
+    if (fullName === "") {
+      this.setState({ showSubmitError: true, errorMsg: "*Full Name is empty" });
+    } else if (mobile === "") {
+      this.setState({ showSubmitError: true, errorMsg: "*Mobile is empty" });
+    } else if (email === "") {
+      this.setState({ showSubmitError: true, errorMsg: "*Email is empty" });
+    } else {
+      this.submitForm();
+    }
   };
 
-  const errorHandler = () => {
-    setErrorModal(null);
-    props.history.replace("/");
-  };
-
-  // to check spinner
-  // const signupSpinner = () => {};
-
-  return (
-    <Wrapper>
-      {errorModal && (
-        <ErrorModal
-          title={errorModal.title}
-          message={errorModal.message}
-          onConfirm={errorHandler}
+  renderMobileField = () => {
+    const { mobile } = this.state;
+    return (
+      <>
+        <label className="input-label" htmlFor="password">
+          MOBILE
+        </label>
+        <input
+          type="text"
+          id="mobile"
+          className="password-input-field"
+          value={mobile}
+          onChange={this.onChangeMobile}
         />
-      )}
-      <div className={style.Signup}>
-        <h1>Signup</h1>
-        {error && <Alert variant="danger">{error}</Alert>}
-        <form onSubmit={signUpAuth} method="post">
-          <Input
-            type="text"
-            label="Name"
-            id="name"
-            name="name"
-            onChange={changeHandler}
-            placeholder="Enter name"
-            Value={userDetails.name}
-          />
-          <Input
-            type="email"
-            label="Email address"
-            id="email"
-            name="email"
-            placeholder="Enter email"
-            text="We'll never share your email with anyone else."
-            isText="true"
-            onChange={changeHandler}
-            Value={userDetails.email}
-          />
-          <Input
-            type="tel"
-            label="Phone Number"
-            id="phone"
-            name="phone"
-            placeholder="Enter Phone no."
-            onChange={changeHandler}
-            Value={userDetails.phone}
-          />
-          <Input
-            type="password"
-            label="Password"
-            id="password"
-            name="password"
-            placeholder="Password"
-            onChange={changeHandler}
-            Value={userDetails.password}
-          />
-          <Input
-            style={{ display: "inline" }}
-            type="password"
-            label="Confirm Password"
-            id="confirmPassword"
-            name="confirmPassword"
-            placeholder="Confirm Password"
-            onChange={changeHandler}
-            Value={userDetails.confirmPassword}
-          />
-          <Button variant="primary" type="submit">
-            Submit
-          </Button>
-          <br />
-          <br />
-          <p style={{ display: "inline" }}>Already Logged in? </p>
-          <a className={style.Link} href="/">
-            Login
-          </a>
-        </form>
+      </>
+    );
+  };
+
+  renderPasswordField = () => {
+    const { email } = this.state;
+    return (
+      <>
+        <label className="input-label" htmlFor="password">
+          EMAIL
+        </label>
+        <input
+          type="text"
+          id="password"
+          className="password-input-field"
+          value={email}
+          onChange={this.onChangePassword}
+        />
+      </>
+    );
+  };
+
+  renderUsernameField = () => {
+    const { fullName } = this.state;
+    return (
+      <>
+        <label className="input-label" htmlFor="username">
+          FULL NAME
+        </label>
+        <input
+          type="text"
+          id="username"
+          className="username-input-field"
+          value={fullName}
+          onChange={this.onChangeUsername}
+        />
+      </>
+    );
+  };
+
+  render() {
+    const { showSubmitError, errorMsg, loader } = this.state;
+    const jwtToken = Cookies.get("jwt_token");
+    if (jwtToken !== undefined) {
+      return <Redirect to="/" />;
+    }
+    return (
+      <div>
+        {loader === true ? (
+          <div className="login-form-container">
+            <RotatingLines
+              strokeColor="grey"
+              strokeWidth="5"
+              animationDuration="0.75"
+              width="96"
+              visible={true}
+            />
+          </div>
+        ) : (
+          <div className="login-form-container">
+            <form className="form-container" onSubmit={this.validateData}>
+              <h1>SIGN UP</h1>
+              <div className="input-container">
+                {this.renderUsernameField()}
+              </div>
+              <div className="input-container">
+                {this.renderPasswordField()}
+              </div>
+              <div className="input-container">{this.renderMobileField()}</div>
+              <button type="submit" className="login-button">
+                SIGNUP
+              </button>
+              {showSubmitError && <p className="error-message">{errorMsg}</p>}
+              <p></p>
+            </form>
+          </div>
+        )}
       </div>
-    </Wrapper>
-  );
-};
+    );
+  }
+}
 
 export default Signup;
