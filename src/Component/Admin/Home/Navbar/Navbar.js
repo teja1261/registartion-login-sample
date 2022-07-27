@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-// import { propTypes } from "react-bootstrap/esm/Image";
-// import firebase from "../../../../Services/firebase/firebase";
 
 import style from "./Navbar.module.css";
 
@@ -31,26 +29,20 @@ const Overlay = (props) => {
 };
 
 const NavBar = (props) => {
-  // const [userDetail, setUserDetail] = useState(null);
   const [isOverlay, setIsOverlay] = useState(false);
-  // console.log(props.userDetails.name, "navbar");
   let user = JSON.parse(localStorage.getItem("userDetail"));
 
   useEffect(() => {
-    // user.current = JSON.parse(localStorage.getItem("userDetail"));
     console.log("Navbar", props.userDetail);
     console.log("Navbar", user);
   }, []);
 
   const overlayHandler = () => {
     setIsOverlay((prevState) => {
-      // console.log(userDetail, "overlay");
       return !prevState;
     });
   };
 
-  // if (userDetail !== null) {
-  // }
 
   return (
     <div className={style.header}>
@@ -75,12 +67,6 @@ const NavBar = (props) => {
                 ? user.profile_image
                 : props.userDetail.profile_image
             }
-            // src="https://www.w3schools.com/howto/img_avatar.png"
-            // src={
-            //   props.userDetail.profile_image === ""
-            //     ? "https://www.w3schools.com/howto/img_avatar.png"
-            //     : props.userDetail.profile_image
-            // }
             alt="profile img"
           />
         </button>

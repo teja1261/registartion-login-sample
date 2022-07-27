@@ -4,6 +4,7 @@ import Login from "./Component/Admin/Login/Login";
 import Signup from "./Component/Admin/Signup/Signup";
 import ProtectedRoute from "./Component/ProtectedRoute";
 import ForgotPassword from "./Component/ForgetPassword/ForgetPassword";
+import SetPassword from "./Component/ForgetPassword/SetPassword/SetPassword";
 import HomePage from "./Component/HomePage/HomePage";
 import NotFound from "./Component/NotFound/NotFound";
 
@@ -18,6 +19,7 @@ export default class App extends Component {
           <Route exact path="/signup" component={Signup} />
           <ProtectedRoute exact path="/" component={HomePage} />
           <Route exact path="/forget-password" component={ForgotPassword} />
+          <Route exact path="/set-password" component={SetPassword} />
           <Route path="/not-found" component={NotFound} />
           <Redirect to="/not-found" />
         </Switch>

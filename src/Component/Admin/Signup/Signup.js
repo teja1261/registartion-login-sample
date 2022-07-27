@@ -1,6 +1,4 @@
 import { Component } from "react";
-import Cookies from "js-cookie";
-import { Redirect } from "react-router-dom";
 import { RotatingLines } from "react-loader-spinner";
 import "./Signup.css";
 import { signupAPI } from "src/Services/signupAPI";
@@ -27,9 +25,19 @@ class Signup extends Component {
     this.setState({ mobile: event.target.value, errorMsg: "" });
   };
 
-  onSubmitSuccess = () => {
+  navigateToReasonForm = (email) => {
     const { history } = this.props;
-    history.replace("/login");
+    history.push({
+      pathname: "/set-password",
+      state: {
+        email: email,
+      },
+    });
+  };
+
+  onSubmitSuccess = () => {
+    const { email } = this.state;
+    this.navigateToReasonForm(email);
   };
 
   submitForm = async () => {
@@ -119,11 +127,7 @@ class Signup extends Component {
   };
 
   render() {
-    const { showSubmitError, errorMsg, loader } = this.state;
-    const jwtToken = Cookies.get("jwt_token");
-    if (jwtToken !== undefined) {
-      return <Redirect to="/" />;
-    }
+    const { loader, showSubmitError, errorMsg } = this.state;
     return (
       <div>
         {loader === true ? (
@@ -151,7 +155,6 @@ class Signup extends Component {
                 SIGNUP
               </button>
               {showSubmitError && <p className="error-message">{errorMsg}</p>}
-              <p></p>
             </form>
           </div>
         )}
